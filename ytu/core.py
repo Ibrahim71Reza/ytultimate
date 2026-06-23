@@ -19,7 +19,7 @@ from .formats import (
     count_formats_by_height,
     smart_default_quality,
 )
-from .progress import DownloadProgress, RichLogger
+from .progress import DownloadProgress, FinalPathReporter, RichLogger
 
 SUPPORTED_CONTAINERS = {"mp4", "mkv", "webm", "mov", "flv", "avi"}
 SUPPORTED_AUDIO_FORMATS = {"best", "aac", "alac", "flac", "m4a", "mp3", "opus", "vorbis", "wav"}
@@ -117,7 +117,9 @@ def build_ydl_opts(
     console: Console | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    outtmpl = str(output_dir / output_template)
+    template_path = Path(output_template).expanduser()
+    template_is_absolute = template_path.is_absolute()
+    outtmpl = str(template_path) if template_is_absolute else output_template
 
     if container not in SUPPORTED_CONTAINERS:
         raise ValueError(
@@ -162,7 +164,6 @@ def build_ydl_opts(
             fallback=fallback,
         ),
         "outtmpl": {"default": outtmpl},
-        "paths": {"home": str(output_dir)},
         "merge_output_format": container,
         "noplaylist": not playlist,
         "playlist_items": playlist_items,
@@ -198,6 +199,8 @@ def build_ydl_opts(
         "logger": RichLogger(console or Console()),
     }
 
+    if not template_is_absolute:
+        opts["paths"] = {"home": str(output_dir)}
     if archive:
         opts["download_archive"] = str(archive_path or (output_dir / ".download-archive.txt"))
     if cookies_from_browser:
@@ -227,11 +230,17 @@ def download(urls: list[str], ydl_opts: dict[str, Any], *, console: Console) -> 
         ensure_ffmpeg(console)
         with DownloadProgress(console) as progress:
             ydl_opts = dict(ydl_opts)
+            reporter = FinalPathReporter(console)
             ydl_opts["progress_hooks"] = [progress.hook]
+            ydl_opts["postprocessor_hooks"] = [reporter.hook]
             import yt_dlp
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download(urls)
+            reporter.print_summary()
+            output_home = ydl_opts.get("paths", {}).get("home")
+            if output_home:
+                console.print(f"[cyan]Output directory:[/cyan] {output_home}")
     else:
         import yt_dlp
 

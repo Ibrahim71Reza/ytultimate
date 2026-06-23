@@ -125,6 +125,48 @@ Extract audio as MP3:
 ytdown audio "VIDEO_URL" --audio-format mp3 --audio-quality 0
 ```
 
+See where downloads will be saved:
+
+```bash
+ytdown paths
+```
+
+---
+
+## Where did my video go?
+
+By default, downloads are saved here:
+
+```text
+~/Videos/YTUltimate
+```
+
+The default filename template also creates an uploader folder, so a typical file will look like this:
+
+```text
+~/Videos/YTUltimate/CHANNEL_NAME/VIDEO_TITLE [VIDEO_ID].mp4
+```
+
+Find your latest downloaded files:
+
+```bash
+find ~/Videos/YTUltimate -type f -printf "%TY-%Tm-%Td %TH:%TM  %p\n" | sort | tail -20
+```
+
+Search for one downloaded video by YouTube ID:
+
+```bash
+find ~/Videos/YTUltimate -type f -iname "*VIDEO_ID*"
+```
+
+Save to a custom folder:
+
+```bash
+ytdown download "VIDEO_URL" --output ~/Downloads
+```
+
+`--output`, `--output-dir`, and `-o` all mean the download folder. Use `--template` only when you want to change the filename/folder pattern inside that output folder.
+
 ---
 
 ## Most useful examples
@@ -142,6 +184,7 @@ ytdown audio "VIDEO_URL" --audio-format mp3 --audio-quality 0
 | Audio MP3 | `ytdown audio "VIDEO_URL" --audio-format mp3` |
 | Dry run | `ytdown download "VIDEO_URL" --quality 720p --dry-run` |
 | Browser cookies | `ytdown download "VIDEO_URL" --cookies-from-browser chrome` |
+| Custom output folder | `ytdown download "VIDEO_URL" --output ~/Downloads` |
 
 ---
 
@@ -420,10 +463,23 @@ ytdown download "VIDEO_URL" --config ./my-config.json
 
 ## Output folder and filenames
 
+Show current paths:
+
+```bash
+ytdown paths
+```
+
 Set a custom output folder:
 
 ```bash
+ytdown download "VIDEO_URL" --output ~/Videos/Downloads
+```
+
+Equivalent aliases:
+
+```bash
 ytdown download "VIDEO_URL" --output-dir ~/Videos/Downloads
+ytdown download "VIDEO_URL" -o ~/Videos/Downloads
 ```
 
 Use a custom filename template:
@@ -454,6 +510,12 @@ Check installed tools:
 ytdown doctor
 ```
 
+Show default output/config/queue paths:
+
+```bash
+ytdown paths
+```
+
 Update the yt-dlp extraction engine inside the current Python environment:
 
 ```bash
@@ -480,6 +542,7 @@ ytdown update-engine --nightly
 | `ytdown info` | Show video metadata |
 | `ytdown init-config` | Create a config file |
 | `ytdown doctor` | Check dependencies and setup |
+| `ytdown paths` | Show output, config, queue, and archive paths |
 | `ytdown selfcheck` | Alias for `doctor` |
 | `ytdown update-engine` | Update yt-dlp |
 | `ytdown queue add` | Add URLs to the queue |
@@ -528,7 +591,7 @@ python -m compileall ytu
 python -m pytest
 ```
 
-The included tests cover quality parsing, format selector construction, fallback behavior, and queue persistence.
+The included tests cover quality parsing, format selector construction, fallback behavior, output path handling, command help, and queue persistence.
 
 ---
 

@@ -82,3 +82,32 @@ class DownloadProgress:
             self.console.print(f"[green]downloaded:[/green] {Path(key).name}")
         elif status == "error":
             self.console.print(f"[red]failed:[/red] {name}")
+
+
+class FinalPathReporter:
+    """Collect and print final post-processed output paths reported by yt-dlp."""
+
+    def __init__(self, console: Console) -> None:
+        self.console = console
+        self._paths: set[str] = set()
+
+    def hook(self, data: dict[str, Any]) -> None:
+        if data.get("status") != "finished":
+            return
+        info = data.get("info_dict") or {}
+        candidates = [
+            info.get("filepath"),
+            info.get("_filename"),
+            data.get("filepath"),
+            data.get("filename"),
+        ]
+        for candidate in candidates:
+            if candidate:
+                self._paths.add(str(candidate))
+                return
+
+    def print_summary(self) -> None:
+        if not self._paths:
+            return
+        for path in sorted(self._paths):
+            self.console.print(f"[bold green]saved:[/bold green] {path}")

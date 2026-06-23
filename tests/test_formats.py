@@ -79,3 +79,39 @@ def test_available_heights_and_default_quality():
     heights = available_video_heights(info)
     assert heights == [1080, 720, 360]
     assert smart_default_quality(heights) == "1080p"
+
+
+def test_build_opts_uses_relative_template_with_paths(tmp_path):
+    from ytu.core import build_ydl_opts
+
+    opts = build_ydl_opts(
+        output_dir=tmp_path,
+        output_template="%(title)s.%(ext)s",
+        quality="720p",
+        exact_quality=False,
+        format_id=None,
+        compat=True,
+        container="mp4",
+        playlist=False,
+        playlist_items=None,
+        subtitles=False,
+        auto_subtitles=False,
+        embed_subtitles=False,
+        sub_langs="en.*",
+        thumbnail=False,
+        embed_thumbnail=False,
+        metadata=True,
+        safe_names=False,
+        archive=False,
+        archive_path=None,
+        rate_limit=None,
+        retries=1,
+        fragment_retries=1,
+        concurrent_fragments=1,
+        cookies_from_browser=None,
+        ffmpeg_location=None,
+        sponsorblock_remove="",
+        sponsorblock_mark="",
+    )
+    assert opts["outtmpl"]["default"] == "%(title)s.%(ext)s"
+    assert opts["paths"]["home"] == str(tmp_path)

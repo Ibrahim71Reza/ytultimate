@@ -182,7 +182,7 @@ def download_video(
         "-f",
         help="Manual yt-dlp format ID/selector. Overrides --quality.",
     ),
-    output_dir: Optional[Path] = typer.Option(None, "--output-dir", "-o", help="Download directory."),
+    output_dir: Optional[Path] = typer.Option(None, "--output", "--output-dir", "-o", help="Download directory."),
     output_template: Optional[str] = typer.Option(None, "--template", help="yt-dlp output template."),
     container: Optional[str] = typer.Option(None, "--container", help="Merge container: mp4, mkv, webm, mov, flv, avi."),
     compat: Optional[bool] = typer.Option(None, "--compat/--no-compat", help="Prefer MP4/M4A-friendly formats first."),
@@ -278,7 +278,7 @@ def download_audio(
     file: Optional[Path] = typer.Option(None, "--file", "-a", help="Text file with one URL per line."),
     audio_format: str = typer.Option("mp3", "--audio-format", help="mp3, m4a, opus, flac, wav, best, etc."),
     audio_quality: str = typer.Option("0", "--audio-quality", help="0 best to 10 worst for VBR, or bitrate like 192K."),
-    output_dir: Optional[Path] = typer.Option(None, "--output-dir", "-o", help="Download directory."),
+    output_dir: Optional[Path] = typer.Option(None, "--output", "--output-dir", "-o", help="Download directory."),
     output_template: Optional[str] = typer.Option(None, "--template", help="yt-dlp output template."),
     playlist: Optional[bool] = typer.Option(None, "--playlist/--single", help="Allow playlist/channel downloads, or force a single video."),
     archive: Optional[bool] = typer.Option(None, "--archive/--no-archive", help="Skip files already downloaded before."),
@@ -335,7 +335,7 @@ def download_audio(
 @app.command("wizard")
 def wizard(
     url: str = typer.Argument(..., help="Video URL."),
-    output_dir: Optional[Path] = typer.Option(None, "--output-dir", "-o", help="Download directory."),
+    output_dir: Optional[Path] = typer.Option(None, "--output", "--output-dir", "-o", help="Download directory."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
     config: Optional[Path] = typer.Option(None, "--config", help=f"Config path. Default: {CONFIG_PATH}"),
 ) -> None:
@@ -455,6 +455,24 @@ def init_config(
     console.print(f"[green]Config ready:[/green] {target}")
 
 
+@app.command("paths")
+def paths(
+    config: Optional[Path] = typer.Option(None, "--config", help=f"Config path. Default: {CONFIG_PATH}"),
+) -> None:
+    """Show where downloads, config, queue, and archive files are stored."""
+    cfg = load_config(config)
+    output_dir = expand_path(cfg["output_dir"])
+    table = Table(title="YT Ultimate paths")
+    table.add_column("Item")
+    table.add_column("Path / Value")
+    table.add_row("Default output directory", str(output_dir))
+    table.add_row("Filename template", str(cfg["output_template"]))
+    table.add_row("Config file", str((config or CONFIG_PATH).expanduser()))
+    table.add_row("Queue file", str(QUEUE_PATH))
+    table.add_row("Default archive file", str(output_dir / ".download-archive.txt"))
+    console.print(table)
+
+
 @app.command("doctor")
 def doctor() -> None:
     """Check required external tools and show upgrade guidance."""
@@ -479,7 +497,9 @@ def doctor() -> None:
     table.add_row("ffmpeg", "found" if shutil.which("ffmpeg") else "missing", "sudo apt install ffmpeg")
     table.add_row("ffprobe", "found" if shutil.which("ffprobe") else "missing", "sudo apt install ffmpeg")
     table.add_row("git", "found" if shutil.which("git") else "missing", "sudo apt install git")
+    cfg = load_config(None)
     table.add_row("config", str(CONFIG_PATH), "ytdown init-config")
+    table.add_row("output", str(expand_path(cfg["output_dir"])), "ytdown paths")
     table.add_row("queue", str(QUEUE_PATH), "ytdown queue add URL")
     console.print(table)
 
@@ -562,7 +582,7 @@ def queue_list(
 def queue_run(
     limit: Optional[int] = typer.Option(None, "--limit", help="Maximum queued items to run."),
     queue_path: Optional[Path] = typer.Option(None, "--queue", help=f"Queue path. Default: {QUEUE_PATH}"),
-    output_dir: Optional[Path] = typer.Option(None, "--output-dir", "-o", help="Download directory."),
+    output_dir: Optional[Path] = typer.Option(None, "--output", "--output-dir", "-o", help="Download directory."),
     config: Optional[Path] = typer.Option(None, "--config", help=f"Config path. Default: {CONFIG_PATH}"),
     continue_on_error: bool = typer.Option(True, "--continue/--stop-on-error", help="Continue queue after one item fails."),
 ) -> None:

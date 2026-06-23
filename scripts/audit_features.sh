@@ -254,6 +254,7 @@ checks = {
     "info command": '@app.command("info")' in cli,
     "init-config command": '@app.command("init-config")' in cli,
     "doctor command": '@app.command("doctor")' in cli,
+    "paths command": '@app.command("paths")' in cli,
     "selfcheck command": '@app.command("selfcheck")' in cli,
     "update-engine command": '@app.command("update-engine")' in cli,
     "queue subcommands": all(x in cli for x in ['@queue_app.command("add")', '@queue_app.command("list")', '@queue_app.command("run")', '@queue_app.command("clear")']),
@@ -314,7 +315,7 @@ done
 section "CLI help surface"
 
 run_cmd "Top-level help" ytdown --help
-for subcmd in download audio wizard formats plan info init-config doctor selfcheck update-engine queue; do
+for subcmd in download audio wizard formats plan info init-config doctor paths selfcheck update-engine queue; do
   run_cmd "Help: ytdown $subcmd" ytdown "$subcmd" --help
 done
 for subcmd in add list run clear; do
@@ -474,6 +475,7 @@ PY
 section "External dependency checks"
 
 run_cmd "doctor command" ytdown doctor
+run_cmd "paths command" ytdown paths
 run_cmd "selfcheck command" ytdown selfcheck
 
 for bin in python3 git ffmpeg ffprobe; do
