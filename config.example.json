@@ -1,0 +1,14 @@
+{
+  "output_dir": "~/Videos/YTUltimate",
+  "quality": "720p",
+  "container": "mp4",
+  "output_template": "%(uploader|Unknown)s/%(title).180B [%(id)s].%(ext)s",
+  "sub_langs": "en.*",
+  "concurrent_fragments": 4,
+  "retries": 10,
+  "fragment_retries": 10,
+  "playlist": false,
+  "safe_names": false,
+  "compat": true,
+  "write_metadata": true
+}

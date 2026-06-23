@@ -1,0 +1,2 @@
+# Add one authorized video URL per line.
+# https://www.youtube.com/watch?v=VIDEO_ID
