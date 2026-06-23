@@ -184,8 +184,8 @@ cat > "$REPORT_MD" <<EOF
 # YT Ultimate CLI Audit Report
 
 Generated: $(date -Iseconds)
-Project root: \\`$ROOT_DIR\\`
-Report dir: \\`$REPORT_ROOT\\`
+Project root: \`$ROOT_DIR\`
+Report dir: \`$REPORT_ROOT\`
 
 ## Environment requested
 
