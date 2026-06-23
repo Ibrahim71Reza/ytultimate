@@ -34,6 +34,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "archive": False,
     "sponsorblock_remove": "",
     "sponsorblock_mark": "",
+    "remote_components": "",
 }
 
 PRESETS: dict[str, dict[str, Any]] = {

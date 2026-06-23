@@ -1,4 +1,4 @@
-{
+﻿{
   "output_dir": "~/Videos/YTUltimate",
   "quality": "best",
   "fallback": "lower",
@@ -21,5 +21,7 @@
   "socket_timeout": 30,
   "archive": false,
   "sponsorblock_remove": "",
-  "sponsorblock_mark": ""
+  "sponsorblock_mark": "",
+  "remote_components": ""
 }
+

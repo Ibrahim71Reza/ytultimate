@@ -25,3 +25,13 @@ downloads/
 
 # Generated audit output
 audit-reports/
+
+# Build and test artifacts
+build/
+dist/.tmp/.pyinstaller-cache/
+*.spec
+test-audio/
+test-downloads/
+test-ejs*/
+.tmp/
+.pyinstaller-cache/

@@ -98,6 +98,7 @@ def _common_opts(
     max_sleep_interval: Optional[float],
     socket_timeout: Optional[float],
     print_filename: bool,
+    remote_components: Optional[str],
 ) -> dict:
     return build_ydl_opts(
         output_dir=expand_path(output_dir or cfg["output_dir"]),
@@ -151,6 +152,7 @@ def _common_opts(
         else cfg.get("max_sleep_interval"),
         socket_timeout=socket_timeout if socket_timeout is not None else cfg.get("socket_timeout"),
         print_filename=print_filename,
+        remote_components=remote_components if remote_components is not None else cfg.get("remote_components", ""),
         console=console,
     )
 
@@ -206,6 +208,7 @@ def download_video(
     concurrent_fragments: Optional[int] = typer.Option(None, "--fragments", help="Concurrent fragments."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies, e.g. chrome or firefox, only for content you are allowed to access."),
     ffmpeg_location: Optional[str] = typer.Option(None, "--ffmpeg-location", help="Custom ffmpeg/ffprobe location."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
     sponsorblock_remove: Optional[str] = typer.Option(None, "--sponsorblock-remove", help="Comma-separated SponsorBlock categories to remove."),
     sponsorblock_mark: Optional[str] = typer.Option(None, "--sponsorblock-mark", help="Comma-separated SponsorBlock categories to mark as chapters."),
     format_sort: Optional[str] = typer.Option(None, "--format-sort", help="yt-dlp format sort, e.g. res:720,ext:mp4:m4a."),
@@ -264,6 +267,7 @@ def download_video(
             max_sleep_interval=max_sleep_interval,
             socket_timeout=socket_timeout,
             print_filename=print_filename,
+            remote_components=remote_components,
         )
         run_download(final_urls, opts, console=console)
         console.print("[bold green]Done.[/bold green]")
@@ -283,6 +287,7 @@ def download_audio(
     playlist: Optional[bool] = typer.Option(None, "--playlist/--single", help="Allow playlist/channel downloads, or force a single video."),
     archive: Optional[bool] = typer.Option(None, "--archive/--no-archive", help="Skip files already downloaded before."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
     config: Optional[Path] = typer.Option(None, "--config", help=f"Config path. Default: {CONFIG_PATH}"),
 ) -> None:
     """Extract audio from authorized videos."""
@@ -323,6 +328,7 @@ def download_audio(
             audio_quality=audio_quality,
             fallback=cfg.get("fallback", "lower"),
             socket_timeout=cfg.get("socket_timeout"),
+            remote_components=remote_components if remote_components is not None else cfg.get("remote_components", ""),
             console=console,
         )
         run_download(final_urls, opts, console=console)
@@ -337,12 +343,13 @@ def wizard(
     url: str = typer.Argument(..., help="Video URL."),
     output_dir: Optional[Path] = typer.Option(None, "--output", "--output-dir", "-o", help="Download directory."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
     config: Optional[Path] = typer.Option(None, "--config", help=f"Config path. Default: {CONFIG_PATH}"),
 ) -> None:
     """Interactive downloader: inspect formats, choose quality, then download."""
     try:
         cfg = load_config(config)
-        info = extract_info(url, cookies_from_browser=cookies_from_browser)
+        info = extract_info(url, cookies_from_browser=cookies_from_browser, remote_components=remote_components)
         heights = available_video_heights(info)
         default_quality = smart_default_quality(heights)
         choices = ["best"] + [f"{h}p" for h in heights] + ["manual"]
@@ -396,6 +403,7 @@ def wizard(
             write_info_json=bool(cfg.get("write_info_json", False)),
             write_description=bool(cfg.get("write_description", False)),
             socket_timeout=cfg.get("socket_timeout"),
+            remote_components=remote_components if remote_components is not None else cfg.get("remote_components", ""),
             console=console,
         )
         run_download([url], opts, console=console)
@@ -409,10 +417,11 @@ def wizard(
 def formats(
     url: str = typer.Argument(..., help="Video URL."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
 ) -> None:
     """List all available video/audio formats before downloading."""
     try:
-        print_formats(url, console, cookies_from_browser=cookies_from_browser)
+        print_formats(url, console, cookies_from_browser=cookies_from_browser, remote_components=remote_components)
     except Exception as exc:
         render_error(console, exc)
         raise typer.Exit(code=1) from exc
@@ -422,10 +431,11 @@ def formats(
 def plan(
     url: str = typer.Argument(..., help="Video URL."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
 ) -> None:
     """Inspect a URL and print recommended commands without downloading."""
     try:
-        print_plan(url, console, cookies_from_browser=cookies_from_browser)
+        print_plan(url, console, cookies_from_browser=cookies_from_browser, remote_components=remote_components)
     except Exception as exc:
         render_error(console, exc)
         raise typer.Exit(code=1) from exc
@@ -436,10 +446,11 @@ def info(
     url: str = typer.Argument(..., help="Video URL."),
     json_output: bool = typer.Option(False, "--json", help="Print raw JSON metadata."),
     cookies_from_browser: Optional[str] = typer.Option(None, "--cookies-from-browser", help="Use browser cookies only for content you are allowed to access."),
+    remote_components: Optional[str] = typer.Option(None, "--remote-components", help="Allow yt-dlp remote components, e.g. ejs:github or ejs:npm."),
 ) -> None:
     """Show video metadata."""
     try:
-        print_info(url, console, raw_json=json_output, cookies_from_browser=cookies_from_browser)
+        print_info(url, console, raw_json=json_output, cookies_from_browser=cookies_from_browser, remote_components=remote_components)
     except Exception as exc:
         render_error(console, exc)
         raise typer.Exit(code=1) from exc

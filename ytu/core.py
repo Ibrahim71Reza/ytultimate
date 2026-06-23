@@ -114,6 +114,7 @@ def build_ydl_opts(
     max_sleep_interval: float | None = None,
     socket_timeout: float | None = None,
     print_filename: bool = False,
+    remote_components: str | None = None,
     console: Console | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -197,6 +198,7 @@ def build_ydl_opts(
         "print_to_file": None,
         "forceprint": {"video": ["filename"]} if print_filename else None,
         "logger": RichLogger(console or Console()),
+        "remote_components": parse_csv(remote_components),
     }
 
     if not template_is_absolute:
@@ -304,7 +306,7 @@ def print_info(
     console.print(table)
 
 
-def print_formats(url: str, console: Console, *, cookies_from_browser: str | None = None) -> None:
+def print_formats(url: str, console: Console, *, cookies_from_browser: str | None = None, remote_components: str | None = None) -> None:
     info = extract_info(url, flat=False, cookies_from_browser=cookies_from_browser)
     formats = info.get("formats") or []
     table = Table(title=f"Available formats: {info.get('title', 'video')}", show_lines=False)
@@ -337,7 +339,7 @@ def print_formats(url: str, console: Console, *, cookies_from_browser: str | Non
     console.print(table)
 
 
-def print_plan(url: str, console: Console, *, cookies_from_browser: str | None = None) -> None:
+def print_plan(url: str, console: Console, *, cookies_from_browser: str | None = None, remote_components: str | None = None) -> None:
     info = extract_info(url, flat=False, cookies_from_browser=cookies_from_browser)
     heights = available_video_heights(info)
     counts = count_formats_by_height(info)
