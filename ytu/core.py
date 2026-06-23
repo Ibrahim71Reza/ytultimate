@@ -2,18 +2,39 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Iterable
 
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from .config import expand_path
-from .formats import build_audio_format, build_video_format
+from .formats import (
+    available_video_heights,
+    build_audio_format,
+    build_video_format,
+    count_formats_by_height,
+    smart_default_quality,
+)
 from .progress import DownloadProgress, RichLogger
 
 SUPPORTED_CONTAINERS = {"mp4", "mkv", "webm", "mov", "flv", "avi"}
 SUPPORTED_AUDIO_FORMATS = {"best", "aac", "alac", "flac", "m4a", "mp3", "opus", "vorbis", "wav"}
+SPONSORBLOCK_CATEGORIES = {
+    "sponsor",
+    "intro",
+    "outro",
+    "selfpromo",
+    "preview",
+    "interaction",
+    "music_offtopic",
+    "poi_highlight",
+    "chapter",
+    "all",
+}
 
 
 def ensure_ffmpeg(console: Console) -> None:
@@ -31,6 +52,10 @@ def parse_cookies_from_browser(value: str | None) -> tuple[str, ...] | None:
     if not parts:
         return None
     return tuple(parts)
+
+
+def parse_csv(value: str | None) -> list[str]:
+    return [x.strip() for x in (value or "").split(",") if x.strip()]
 
 
 def normalize_urls(urls: Iterable[str], url_file: Path | None = None) -> list[str]:
@@ -73,17 +98,31 @@ def build_ydl_opts(
     cookies_from_browser: str | None,
     ffmpeg_location: str | None,
     sponsorblock_remove: str | None,
-    dry_run: bool,
+    sponsorblock_mark: str | None = None,
+    dry_run: bool = False,
     audio_only: bool = False,
     audio_format: str = "mp3",
     audio_quality: str = "0",
+    fallback: str = "lower",
+    format_sort: str | None = None,
+    format_sort_force: bool = False,
+    write_info_json: bool = False,
+    write_description: bool = False,
+    keep_video: bool = False,
+    no_overwrites: bool = True,
+    sleep_interval: float | None = None,
+    max_sleep_interval: float | None = None,
+    socket_timeout: float | None = None,
+    print_filename: bool = False,
     console: Console | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     outtmpl = str(output_dir / output_template)
 
     if container not in SUPPORTED_CONTAINERS:
-        raise ValueError(f"Unsupported container '{container}'. Use one of: {', '.join(sorted(SUPPORTED_CONTAINERS))}")
+        raise ValueError(
+            f"Unsupported container '{container}'. Use one of: {', '.join(sorted(SUPPORTED_CONTAINERS))}"
+        )
     if audio_format not in SUPPORTED_AUDIO_FORMATS:
         raise ValueError(
             f"Unsupported audio format '{audio_format}'. Use one of: {', '.join(sorted(SUPPORTED_AUDIO_FORMATS))}"
@@ -103,8 +142,25 @@ def build_ydl_opts(
     if embed_thumbnail:
         postprocessors.append({"key": "EmbedThumbnail"})
 
+    remove_categories = parse_csv(sponsorblock_remove)
+    mark_categories = parse_csv(sponsorblock_mark)
+    for category in remove_categories + mark_categories:
+        if category not in SPONSORBLOCK_CATEGORIES:
+            raise ValueError(
+                f"Unsupported SponsorBlock category '{category}'. "
+                f"Use one of: {', '.join(sorted(SPONSORBLOCK_CATEGORIES))}"
+            )
+
     opts: dict[str, Any] = {
-        "format": build_audio_format(format_id) if audio_only else build_video_format(quality, exact=exact_quality, format_id=format_id, compat=compat),
+        "format": build_audio_format(format_id)
+        if audio_only
+        else build_video_format(
+            quality,
+            exact=exact_quality,
+            format_id=format_id,
+            compat=compat,
+            fallback=fallback,
+        ),
         "outtmpl": {"default": outtmpl},
         "paths": {"home": str(output_dir)},
         "merge_output_format": container,
@@ -113,8 +169,10 @@ def build_ydl_opts(
         "writesubtitles": subtitles,
         "writeautomaticsub": auto_subtitles,
         "embedsubtitles": embed_subtitles,
-        "subtitleslangs": [s.strip() for s in sub_langs.split(",") if s.strip()],
+        "subtitleslangs": parse_csv(sub_langs),
         "writethumbnail": thumbnail or embed_thumbnail,
+        "writeinfojson": write_info_json,
+        "writedescription": write_description,
         "restrictfilenames": safe_names,
         "retries": retries,
         "fragment_retries": fragment_retries,
@@ -122,13 +180,21 @@ def build_ydl_opts(
         "ratelimit": rate_limit,
         "ignoreerrors": False,
         "continuedl": True,
-        "overwrites": False,
+        "overwrites": not no_overwrites,
         "nopart": False,
         "quiet": False,
         "no_warnings": False,
         "simulate": dry_run,
         "skip_download": dry_run,
+        "keepvideo": keep_video,
         "postprocessors": postprocessors,
+        "format_sort": parse_csv(format_sort),
+        "format_sort_force": format_sort_force,
+        "sleep_interval": sleep_interval,
+        "max_sleep_interval": max_sleep_interval,
+        "socket_timeout": socket_timeout,
+        "print_to_file": None,
+        "forceprint": {"video": ["filename"]} if print_filename else None,
         "logger": RichLogger(console or Console()),
     }
 
@@ -138,11 +204,20 @@ def build_ydl_opts(
         opts["cookiesfrombrowser"] = parse_cookies_from_browser(cookies_from_browser)
     if ffmpeg_location:
         opts["ffmpeg_location"] = ffmpeg_location
-    if sponsorblock_remove:
-        opts["sponsorblock_remove"] = [x.strip() for x in sponsorblock_remove.split(",") if x.strip()]
+    if remove_categories:
+        opts["sponsorblock_remove"] = remove_categories
+    if mark_categories:
+        opts["sponsorblock_mark"] = mark_categories
 
-    # Remove None values because yt-dlp treats some None options as user-provided.
-    return {k: v for k, v in opts.items() if v is not None}
+    # Remove None/empty-list values because yt-dlp treats some None options as user-provided.
+    cleaned: dict[str, Any] = {}
+    for key, value in opts.items():
+        if value is None:
+            continue
+        if value == []:
+            continue
+        cleaned[key] = value
+    return cleaned
 
 
 def download(urls: list[str], ydl_opts: dict[str, Any], *, console: Console) -> None:
@@ -164,13 +239,23 @@ def download(urls: list[str], ydl_opts: dict[str, Any], *, console: Console) -> 
             ydl.download(urls)
 
 
-def extract_info(url: str, *, flat: bool = False) -> dict[str, Any]:
-    opts = {
+def extract_info(
+    url: str,
+    *,
+    flat: bool = False,
+    cookies_from_browser: str | None = None,
+    playlist: bool = False,
+) -> dict[str, Any]:
+    opts: dict[str, Any] = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "extract_flat": "in_playlist" if flat else False,
+        "noplaylist": not playlist,
     }
+    cookies = parse_cookies_from_browser(cookies_from_browser)
+    if cookies:
+        opts["cookiesfrombrowser"] = cookies
     import yt_dlp
 
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -180,8 +265,14 @@ def extract_info(url: str, *, flat: bool = False) -> dict[str, Any]:
         return info
 
 
-def print_info(url: str, console: Console, *, raw_json: bool = False) -> None:
-    info = extract_info(url, flat=False)
+def print_info(
+    url: str,
+    console: Console,
+    *,
+    raw_json: bool = False,
+    cookies_from_browser: str | None = None,
+) -> None:
+    info = extract_info(url, flat=False, cookies_from_browser=cookies_from_browser)
     if raw_json:
         console.print_json(json.dumps(info, ensure_ascii=False, default=str))
         return
@@ -194,8 +285,9 @@ def print_info(url: str, console: Console, *, raw_json: bool = False) -> None:
         ("Uploader", info.get("uploader") or info.get("channel")),
         ("Duration", _format_duration(info.get("duration"))),
         ("View count", _format_number(info.get("view_count"))),
-        ("Upload date", info.get("upload_date")),
+        ("Upload date", _format_date(info.get("upload_date"))),
         ("Live status", info.get("live_status")),
+        ("Availability", info.get("availability")),
         ("Webpage URL", info.get("webpage_url")),
     ]
     for key, value in fields:
@@ -203,18 +295,25 @@ def print_info(url: str, console: Console, *, raw_json: bool = False) -> None:
     console.print(table)
 
 
-def print_formats(url: str, console: Console) -> None:
-    info = extract_info(url, flat=False)
+def print_formats(url: str, console: Console, *, cookies_from_browser: str | None = None) -> None:
+    info = extract_info(url, flat=False, cookies_from_browser=cookies_from_browser)
     formats = info.get("formats") or []
     table = Table(title=f"Available formats: {info.get('title', 'video')}", show_lines=False)
-    for column in ["ID", "Ext", "Resolution", "FPS", "Size", "Video", "Audio", "Note"]:
+    for column in ["ID", "Ext", "Resolution", "FPS", "Size", "VCodec", "ACodec", "Bitrate", "Note"]:
         table.add_column(column)
 
     for fmt in formats:
         height = fmt.get("height")
         width = fmt.get("width")
-        resolution = fmt.get("resolution") or (f"{width}x{height}" if width and height else "audio only" if fmt.get("vcodec") == "none" else "-")
+        resolution = fmt.get("resolution") or (
+            f"{width}x{height}"
+            if width and height
+            else "audio only"
+            if fmt.get("vcodec") == "none"
+            else "-"
+        )
         filesize = fmt.get("filesize") or fmt.get("filesize_approx")
+        tbr = fmt.get("tbr") or fmt.get("vbr") or fmt.get("abr")
         table.add_row(
             str(fmt.get("format_id", "-")),
             str(fmt.get("ext", "-")),
@@ -223,9 +322,55 @@ def print_formats(url: str, console: Console) -> None:
             _format_bytes(filesize),
             str(fmt.get("vcodec") or "-"),
             str(fmt.get("acodec") or "-"),
+            f"{tbr:g}k" if isinstance(tbr, (int, float)) else "-",
             str(fmt.get("format_note") or fmt.get("format") or "-")[:60],
         )
     console.print(table)
+
+
+def print_plan(url: str, console: Console, *, cookies_from_browser: str | None = None) -> None:
+    info = extract_info(url, flat=False, cookies_from_browser=cookies_from_browser)
+    heights = available_video_heights(info)
+    counts = count_formats_by_height(info)
+    default_quality = smart_default_quality(heights)
+
+    console.print(
+        Panel(
+            f"[bold]{info.get('title', 'video')}[/bold]\n"
+            f"Uploader: {info.get('uploader') or info.get('channel') or '-'}\n"
+            f"Duration: {_format_duration(info.get('duration')) or '-'}\n"
+            f"Recommended default: [green]{default_quality}[/green] with --fallback lower",
+            title="Download plan",
+            border_style="cyan",
+        )
+    )
+
+    quality_table = Table(title="Detected video quality ladder")
+    quality_table.add_column("Quality")
+    quality_table.add_column("Format count")
+    quality_table.add_column("Command")
+    if not counts:
+        quality_table.add_row("-", "0", "No video formats detected")
+    for height, count in counts.items():
+        quality_table.add_row(
+            f"{height}p",
+            str(count),
+            f'ytu download "{url}" --quality {height}p --fallback lower',
+        )
+    console.print(quality_table)
+
+    console.print("Useful commands:")
+    console.print(f'  ytu download "{url}" --quality {default_quality}')
+    console.print(f'  ytu wizard "{url}"')
+    console.print(f'  ytu formats "{url}"')
+
+
+def update_engine(pre_release: bool = False) -> int:
+    cmd = [sys.executable, "-m", "pip", "install", "-U"]
+    if pre_release:
+        cmd.append("--pre")
+    cmd.append("yt-dlp")
+    return subprocess.call(cmd)
 
 
 def _format_bytes(value: int | float | None) -> str:
@@ -249,6 +394,12 @@ def _format_duration(seconds: int | float | None) -> str | None:
     if h:
         return f"{h}:{m:02d}:{s:02d}"
     return f"{m}:{s:02d}"
+
+
+def _format_date(value: str | None) -> str | None:
+    if not value or len(value) != 8:
+        return value
+    return f"{value[:4]}-{value[4:6]}-{value[6:8]}"
 
 
 def _format_number(value: int | None) -> str | None:

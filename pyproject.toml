@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytultimate"
-version = "0.1.0"
-description = "A polished Linux CLI for authorized YouTube/video downloads with resolution control."
+version = "1.0.0"
+description = "A Linux-first power CLI for authorized YouTube/video downloads with smart quality control."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

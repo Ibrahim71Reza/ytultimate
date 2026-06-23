@@ -1,6 +1,7 @@
 {
   "output_dir": "~/Videos/YTUltimate",
-  "quality": "720p",
+  "quality": "best",
+  "fallback": "lower",
   "container": "mp4",
   "output_template": "%(uploader|Unknown)s/%(title).180B [%(id)s].%(ext)s",
   "sub_langs": "en.*",
@@ -9,6 +10,16 @@
   "fragment_retries": 10,
   "playlist": false,
   "safe_names": false,
-  "compat": true,
-  "write_metadata": true
+  "compat": false,
+  "write_metadata": true,
+  "write_info_json": false,
+  "write_description": false,
+  "format_sort": "",
+  "format_sort_force": false,
+  "sleep_interval": null,
+  "max_sleep_interval": null,
+  "socket_timeout": 30,
+  "archive": false,
+  "sponsorblock_remove": "",
+  "sponsorblock_mark": ""
 }
