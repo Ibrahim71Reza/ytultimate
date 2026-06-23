@@ -9,6 +9,8 @@
 
 `ytdown` gives you smart quality selection, interactive downloads, queues, batch files, playlists, subtitles, thumbnails, metadata, audio extraction, browser-cookie support, and FFmpeg-powered merging through one easy command.
 
+</div>
+
 > ⚠️ **Permission notice**
 >
 > Use this tool only for videos you own, have permission to download, or are allowed to save under the platform/license rules. This project does **not** bypass DRM, paid access, private-video permissions, copyright restrictions, or platform access controls.
