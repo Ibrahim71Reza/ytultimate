@@ -4,6 +4,19 @@ A Linux-first power CLI for **authorized** YouTube/video downloads with smart re
 
 > Use this tool only for videos you own, videos you have permission to download, or content whose license/platform rules allow downloading. This project does not bypass DRM, payment, private-video permissions, or platform access controls.
 
+## Command name
+
+Primary command: `ytdown`
+
+Why: it is short, lowercase, Linux-friendly, and immediately communicates “YouTube download.” Avoid `ytDown` because Linux commands are case-sensitive and uppercase letters make CLI commands harder to type and remember.
+
+Installed aliases:
+
+- `ytdown` — recommended main command
+- `yt-down` — readable hyphenated alias
+- `ytultimate` — full project-name alias
+- `ytu` — old short alias kept for backward compatibility
+
 ## Why this design
 
 YouTube extraction changes frequently, so this CLI wraps `yt-dlp` instead of trying to scrape YouTube directly. `yt-dlp` handles extraction, format listing, merging, subtitles, metadata, playlists, SponsorBlock, and many edge cases; this project adds a cleaner, safer, more opinionated interface on top.
@@ -12,21 +25,21 @@ YouTube extraction changes frequently, so this CLI wraps `yt-dlp` instead of try
 
 ### Quality and format control
 
-- Best available quality: `ytu download URL`
+- Best available quality: `ytdown download URL`
 - Capped quality: `--quality 720p`, `--quality 1080p`, custom height, etc.
 - Exact quality: `--quality 720p --exact-quality`
 - Smart fallback: `--fallback lower|exact|higher|nearest|any`
 - MP4/M4A compatibility preference: `--compat --container mp4`
 - Manual format selector: `--format-id "137+140"`
 - Format sorting passthrough: `--format-sort "res:720,ext:mp4:m4a"`
-- Format listing: `ytu formats URL`
-- Download planning: `ytu plan URL`
+- Format listing: `ytdown formats URL`
+- Download planning: `ytdown plan URL`
 
 ### Professional download workflow
 
-- Interactive wizard: `ytu wizard URL`
-- Batch URL file: `ytu download --file urls.txt`
-- Persistent queue: `ytu queue add`, `ytu queue list`, `ytu queue run`, `ytu queue clear`
+- Interactive wizard: `ytdown wizard URL`
+- Batch URL file: `ytdown download --file urls.txt`
+- Persistent queue: `ytdown queue add`, `ytdown queue list`, `ytdown queue run`, `ytdown queue clear`
 - Playlist opt-in: `--playlist`
 - Playlist item ranges: `--playlist-items "1:5,8,10"`
 - Download archive: `--archive`
@@ -51,16 +64,16 @@ YouTube extraction changes frequently, so this CLI wraps `yt-dlp` instead of try
 
 ### Audio
 
-- Audio extraction command: `ytu audio URL`
+- Audio extraction command: `ytdown audio URL`
 - Supports `mp3`, `m4a`, `opus`, `flac`, `wav`, `best`, etc.
 - Embeds thumbnail and metadata for audio downloads when possible
 
 ### Maintenance
 
-- Dependency check: `ytu doctor`
-- Alias: `ytu selfcheck`
-- Update extraction engine: `ytu update-engine`
-- Optional pre-release/nightly engine update: `ytu update-engine --nightly`
+- Dependency check: `ytdown doctor`
+- Alias: `ytdown selfcheck`
+- Update extraction engine: `ytdown update-engine`
+- Optional pre-release/nightly engine update: `ytdown update-engine --nightly`
 - Config file: `~/.config/ytultimate/config.json`
 - Git initialized locally for later GitHub remote push
 
@@ -87,8 +100,8 @@ pip install -e .
 Now test:
 
 ```bash
-ytu --version
-ytu doctor
+ytdown --version
+ytdown doctor
 ```
 
 ## Fast examples
@@ -96,97 +109,97 @@ ytu doctor
 Download best quality single video:
 
 ```bash
-ytu download "https://www.youtube.com/watch?v=VIDEO_ID"
+ytdown download "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
 Download best video at or below 720p:
 
 ```bash
-ytu download "https://www.youtube.com/watch?v=VIDEO_ID" --quality 720p
+ytdown download "https://www.youtube.com/watch?v=VIDEO_ID" --quality 720p
 ```
 
 Require exactly 720p:
 
 ```bash
-ytu download "https://www.youtube.com/watch?v=VIDEO_ID" --quality 720p --exact-quality
+ytdown download "https://www.youtube.com/watch?v=VIDEO_ID" --quality 720p --exact-quality
 ```
 
 Try exact/lower/higher/best fallback automatically:
 
 ```bash
-ytu download "VIDEO_URL" --quality 720p --fallback nearest
+ytdown download "VIDEO_URL" --quality 720p --fallback nearest
 ```
 
 Prefer MP4/M4A-friendly output:
 
 ```bash
-ytu download "VIDEO_URL" --quality 1080p --compat --container mp4
+ytdown download "VIDEO_URL" --quality 1080p --compat --container mp4
 ```
 
 Plan before downloading:
 
 ```bash
-ytu plan "VIDEO_URL"
+ytdown plan "VIDEO_URL"
 ```
 
 Interactive mode:
 
 ```bash
-ytu wizard "VIDEO_URL"
+ytdown wizard "VIDEO_URL"
 ```
 
 List all available formats:
 
 ```bash
-ytu formats "VIDEO_URL"
+ytdown formats "VIDEO_URL"
 ```
 
 Use a specific format ID or custom yt-dlp selector:
 
 ```bash
-ytu download "VIDEO_URL" --format-id "137+140"
+ytdown download "VIDEO_URL" --format-id "137+140"
 ```
 
 Batch download:
 
 ```bash
-ytu download --file examples/urls.txt --quality 720p --archive
+ytdown download --file examples/urls.txt --quality 720p --archive
 ```
 
 Download playlist intentionally:
 
 ```bash
-ytu download "PLAYLIST_URL" --playlist --quality 720p --archive
+ytdown download "PLAYLIST_URL" --playlist --quality 720p --archive
 ```
 
 Download selected playlist items:
 
 ```bash
-ytu download "PLAYLIST_URL" --playlist --playlist-items "1:5,8,10" --quality 720p
+ytdown download "PLAYLIST_URL" --playlist --playlist-items "1:5,8,10" --quality 720p
 ```
 
 Extract audio:
 
 ```bash
-ytu audio "VIDEO_URL" --audio-format mp3 --audio-quality 0
+ytdown audio "VIDEO_URL" --audio-format mp3 --audio-quality 0
 ```
 
 Download subtitles:
 
 ```bash
-ytu download "VIDEO_URL" --quality 720p --subs --embed-subs --sub-langs "en.*,bn"
+ytdown download "VIDEO_URL" --quality 720p --subs --embed-subs --sub-langs "en.*,bn"
 ```
 
 Preview without downloading:
 
 ```bash
-ytu download "VIDEO_URL" --quality 720p --dry-run
+ytdown download "VIDEO_URL" --quality 720p --dry-run
 ```
 
 Use browser cookies for content you are allowed to access:
 
 ```bash
-ytu download "VIDEO_URL" --cookies-from-browser chrome
+ytdown download "VIDEO_URL" --cookies-from-browser chrome
 ```
 
 ## Queue workflow
@@ -194,47 +207,47 @@ ytu download "VIDEO_URL" --cookies-from-browser chrome
 Add URLs:
 
 ```bash
-ytu queue add "VIDEO_URL_1" "VIDEO_URL_2" --quality 720p --fallback nearest --compat
+ytdown queue add "VIDEO_URL_1" "VIDEO_URL_2" --quality 720p --fallback nearest --compat
 ```
 
 Add from file:
 
 ```bash
-ytu queue add --file examples/urls.txt --quality 1080p
+ytdown queue add --file examples/urls.txt --quality 1080p
 ```
 
 List queue:
 
 ```bash
-ytu queue list
+ytdown queue list
 ```
 
 Run queue:
 
 ```bash
-ytu queue run
+ytdown queue run
 ```
 
 Stop on the first failed item:
 
 ```bash
-ytu queue run --stop-on-error
+ytdown queue run --stop-on-error
 ```
 
 Clear queue:
 
 ```bash
-ytu queue clear
+ytdown queue clear
 ```
 
 ## Presets
 
 ```bash
-ytu download "VIDEO_URL" --preset mobile
-ytu download "VIDEO_URL" --preset lecture
-ytu download "VIDEO_URL" --preset archive
-ytu download "VIDEO_URL" --preset mp4
-ytu download "VIDEO_URL" --preset max
+ytdown download "VIDEO_URL" --preset mobile
+ytdown download "VIDEO_URL" --preset lecture
+ytdown download "VIDEO_URL" --preset archive
+ytdown download "VIDEO_URL" --preset mp4
+ytdown download "VIDEO_URL" --preset max
 ```
 
 Available presets:
@@ -252,7 +265,7 @@ Available presets:
 Create config:
 
 ```bash
-ytu init-config
+ytdown init-config
 ```
 
 Default path:

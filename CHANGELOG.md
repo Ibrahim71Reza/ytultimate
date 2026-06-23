@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - Command rename
+
+- Added `ytdown` as the recommended primary command.
+- Added `yt-down` as a readable alias.
+- Kept `ytu` and `ytultimate` as backward-compatible aliases.
+- Updated README examples and internal user-facing guidance to prefer `ytdown`.
+
 ## 1.0.0 - Ultimate CLI upgrade
 
 - Added interactive `ytu wizard` downloader.

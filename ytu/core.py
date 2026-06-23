@@ -355,14 +355,14 @@ def print_plan(url: str, console: Console, *, cookies_from_browser: str | None =
         quality_table.add_row(
             f"{height}p",
             str(count),
-            f'ytu download "{url}" --quality {height}p --fallback lower',
+            f'ytdown download "{url}" --quality {height}p --fallback lower',
         )
     console.print(quality_table)
 
     console.print("Useful commands:")
-    console.print(f'  ytu download "{url}" --quality {default_quality}')
-    console.print(f'  ytu wizard "{url}"')
-    console.print(f'  ytu formats "{url}"')
+    console.print(f'  ytdown download "{url}" --quality {default_quality}')
+    console.print(f'  ytdown wizard "{url}"')
+    console.print(f'  ytdown formats "{url}"')
 
 
 def update_engine(pre_release: bool = False) -> int:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytultimate"
-version = "1.0.0"
+version = "1.0.1"
 description = "A Linux-first power CLI for authorized YouTube/video downloads with smart quality control."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,8 +20,10 @@ dependencies = [
 ]
 
 [project.scripts]
-ytu = "ytu.cli:app"
+ytdown = "ytu.cli:app"
+yt-down = "ytu.cli:app"
 ytultimate = "ytu.cli:app"
+ytu = "ytu.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ytu"]

@@ -469,7 +469,7 @@ def doctor() -> None:
         import yt_dlp
 
         ytdlp_status = f"found {yt_dlp.version.__version__}"
-        ytdlp_fix = "ytu update-engine"
+        ytdlp_fix = "ytdown update-engine"
     except Exception:
         ytdlp_status = "missing"
         ytdlp_fix = "pip install -e ."
@@ -479,8 +479,8 @@ def doctor() -> None:
     table.add_row("ffmpeg", "found" if shutil.which("ffmpeg") else "missing", "sudo apt install ffmpeg")
     table.add_row("ffprobe", "found" if shutil.which("ffprobe") else "missing", "sudo apt install ffmpeg")
     table.add_row("git", "found" if shutil.which("git") else "missing", "sudo apt install git")
-    table.add_row("config", str(CONFIG_PATH), "ytu init-config")
-    table.add_row("queue", str(QUEUE_PATH), "ytu queue add URL")
+    table.add_row("config", str(CONFIG_PATH), "ytdown init-config")
+    table.add_row("queue", str(QUEUE_PATH), "ytdown queue add URL")
     console.print(table)
 
 

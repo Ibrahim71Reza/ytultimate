@@ -12,7 +12,7 @@ def explain_exception(exc: BaseException) -> str:
     if "requested format is not available" in lowered or "format is not available" in lowered:
         tips.extend(
             [
-                "Run: ytu formats URL",
+                "Run: ytdown formats URL",
                 "Try --fallback nearest, remove --exact-quality, or choose a lower --quality such as 720p.",
             ]
         )
@@ -27,16 +27,16 @@ def explain_exception(exc: BaseException) -> str:
     if "copyright" in lowered or "unavailable" in lowered:
         tips.append("The video may be unavailable, removed, region-limited, or blocked by the platform.")
     if "http error 403" in lowered or "forbidden" in lowered:
-        tips.append("Try updating yt-dlp: ytu update-engine. 403 errors are often fixed by extractor updates.")
+        tips.append("Try updating yt-dlp: ytdown update-engine. 403 errors are often fixed by extractor updates.")
     if "no url" in lowered:
         tips.append("Pass a URL or use --file urls.txt with one URL per line.")
 
     if not tips:
         tips.extend(
             [
-                "Run ytu doctor to check dependencies.",
-                "Run ytu formats URL to inspect available qualities.",
-                "Run ytu update-engine if extraction suddenly stopped working.",
+                "Run ytdown doctor to check dependencies.",
+                "Run ytdown formats URL to inspect available qualities.",
+                "Run ytdown update-engine if extraction suddenly stopped working.",
             ]
         )
 
