@@ -1,3 +1,4 @@
+<div align="center">
 # 🎬 YT Ultimate CLI (`ytdown`)
 
 ![Platform](https://img.shields.io/badge/Platform-Linux-blue?style=flat-square&logo=linux)
