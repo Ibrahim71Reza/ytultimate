@@ -66,6 +66,8 @@ sudo apt install -y python3 python3-venv python3-pip ffmpeg git
 From inside the project folder:
 
 ```bash
+git clone https://github.com/Ibrahim71Reza/ytultimate.git
+cd ytultimate
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
