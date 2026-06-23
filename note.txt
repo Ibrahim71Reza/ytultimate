@@ -1,0 +1,691 @@
+YT ULTIMATE CLI - FUTURE UPDATE / RECOMPILE GUIDE
+====================================================
+
+Project:
+  YT Ultimate CLI
+  Main command:
+    ytdown
+  Windows EXE:
+    ytdown.exe
+  GitHub repo:
+    https://github.com/Ibrahim71Reza/ytultimate.git
+
+Purpose of this note:
+  Follow this file when official yt-dlp, FFmpeg, Deno, PyInstaller, Python dependencies,
+  or your own YT Ultimate CLI source code need updating in the future.
+
+IMPORTANT TRUTH
+===============
+
+1. Windows ytdown.exe does NOT auto-update itself.
+   If yt-dlp updates, you must rebuild ytdown.exe and upload a new GitHub Release.
+
+2. Linux/source installs can update yt-dlp more easily, but the app source still needs:
+     git pull
+     pip install -e .
+
+3. FFmpeg is external.
+   Your tool uses system FFmpeg/ffprobe. It is not bundled inside the current ytdown.exe.
+
+4. Deno is external.
+   It helps yt-dlp / YouTube EJS challenge solving when used with:
+     --remote-components ejs:github
+
+5. For YouTube reliability, recommended command:
+     ytdown download "VIDEO_URL" --quality 1080p --fallback nearest --remote-components ejs:github
+
+
+WINDOWS FULL UPDATE + EXE REBUILD GUIDE
+=======================================
+
+Default Windows project path:
+  D:\ytultimate
+
+Default Windows output directory used by the tool:
+  C:\Users\<YOUR_USERNAME>\Videos\YTUltimate
+
+Default Windows config path:
+  C:\Users\<YOUR_USERNAME>\AppData\Local\ytultimate\ytultimate\config.json
+
+Default Windows queue path:
+  C:\Users\<YOUR_USERNAME>\AppData\Local\ytultimate\ytultimate\queue.jsonl
+
+
+STEP 1 - Open PowerShell
+------------------------
+
+Open PowerShell and go to project folder:
+
+  cd D:\ytultimate
+
+
+STEP 2 - Confirm Git is clean
+-----------------------------
+
+  git status -sb
+
+Expected clean output:
+
+  ## main...origin/main
+
+If there are uncommitted changes, commit them or restore them before rebuilding.
+
+
+STEP 3 - Pull latest source from GitHub
+--------------------------------------
+
+  git pull
+
+
+STEP 4 - Fix temporary folder variables if needed
+------------------------------------------------
+
+Use this if PowerShell/Git shows temp warnings:
+
+  $env:TEMP="$env:LOCALAPPDATA\Temp"; $env:TMP="$env:LOCALAPPDATA\Temp"
+
+
+STEP 5 - Update FFmpeg on Windows
+---------------------------------
+
+If FFmpeg is already installed:
+
+  winget upgrade Gyan.FFmpeg
+
+If not installed:
+
+  winget install Gyan.FFmpeg
+
+Close and reopen PowerShell after install/upgrade.
+
+Check:
+
+  ffmpeg -version
+  ffprobe -version
+
+
+STEP 6 - Update Deno on Windows
+-------------------------------
+
+If Deno is already installed:
+
+  winget upgrade DenoLand.Deno
+
+If not installed:
+
+  winget install DenoLand.Deno
+
+Check:
+
+  deno --version
+
+
+STEP 7 - Clean old build artifacts
+----------------------------------
+
+Run from D:\ytultimate:
+
+  Remove-Item -Recurse -Force build, dist, .tmp, .pyinstaller-cache, ytdown.spec -ErrorAction SilentlyContinue
+
+
+STEP 8 - Create or refresh D-drive virtual environment
+-----------------------------------------------------
+
+This keeps the Python environment on D drive instead of filling C drive.
+
+If you want a completely fresh venv:
+
+  Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
+  python -m venv D:\ytultimate\.venv
+
+Upgrade build tools:
+
+  .\.venv\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+
+
+STEP 9 - Install / update project dependencies
+---------------------------------------------
+
+Install the project in editable mode and update key build/runtime packages:
+
+  .\.venv\Scripts\python.exe -m pip install -e .
+  .\.venv\Scripts\python.exe -m pip install -U yt-dlp pyinstaller pyinstaller-hooks-contrib rich typer platformdirs
+
+Optional test dependency:
+
+  .\.venv\Scripts\python.exe -m pip install -U pytest
+
+
+STEP 10 - Check installed versions
+----------------------------------
+
+  .\.venv\Scripts\python.exe -m pip show yt-dlp
+  .\.venv\Scripts\python.exe -m pip show pyinstaller
+  .\.venv\Scripts\python.exe -m pip show ytultimate
+
+
+STEP 11 - Create EXE launcher file
+----------------------------------
+
+Run this one-line PowerShell command:
+
+  New-Item -ItemType Directory -Force build | Out-Null; Set-Content -Encoding UTF8 -Path build\ytdown_exe_entry.py -Value @('from ytu.cli import app','','if __name__ == "__main__":','    app()')
+
+
+STEP 12 - Compile and test source before EXE build
+--------------------------------------------------
+
+  .\.venv\Scripts\python.exe -m compileall ytu
+
+If pytest is installed:
+
+  .\.venv\Scripts\python.exe -m pytest -q
+
+Expected:
+
+  all tests passed
+
+
+STEP 13 - Test source CLI before EXE build
+-----------------------------------------
+
+  .\.venv\Scripts\Activate.ps1
+
+  ytdown --version
+  ytdown doctor
+  ytdown formats "https://www.youtube.com/shorts/dndq9l2pL7Q" --remote-components ejs:github
+  ytdown download "https://www.youtube.com/shorts/dndq9l2pL7Q" --quality 1080p --fallback nearest --remote-components ejs:github --output D:\ytultimate\test-source-download
+
+Expected:
+  - doctor should show ffmpeg found and ffprobe found
+  - formats should show available formats
+  - download should finish with Done.
+  - no serious EJS / n challenge warning when --remote-components ejs:github is used
+
+
+STEP 14 - Build Windows EXE
+---------------------------
+
+Run this full one-line command:
+
+  $env:PYINSTALLER_CONFIG_DIR="D:\ytultimate\.pyinstaller-cache"; $env:TEMP="D:\ytultimate\.tmp"; $env:TMP="D:\ytultimate\.tmp"; New-Item -ItemType Directory -Force .tmp,.pyinstaller-cache,build,dist | Out-Null; .\.venv\Scripts\python.exe -m PyInstaller --onefile --console --clean --name ytdown --workpath D:\ytultimate\build --distpath D:\ytultimate\dist --specpath D:\ytultimate --collect-submodules ytu --collect-submodules yt_dlp --collect-submodules typer --collect-submodules rich --hidden-import typer --hidden-import rich --hidden-import yt_dlp build\ytdown_exe_entry.py
+
+Expected EXE:
+
+  D:\ytultimate\dist\ytdown.exe
+
+
+STEP 15 - Test rebuilt EXE
+--------------------------
+
+  .\dist\ytdown.exe --version
+  .\dist\ytdown.exe doctor
+  .\dist\ytdown.exe formats "https://www.youtube.com/shorts/dndq9l2pL7Q" --remote-components ejs:github
+  .\dist\ytdown.exe download "https://www.youtube.com/shorts/dndq9l2pL7Q" --quality 1080p --fallback nearest --remote-components ejs:github --output D:\ytultimate\test-exe-download
+  .\dist\ytdown.exe audio "https://www.youtube.com/shorts/dndq9l2pL7Q" --audio-format mp3 --remote-components ejs:github --output D:\ytultimate\test-exe-audio
+
+Expected:
+  - version shows ytultimate version
+  - doctor shows ffmpeg found and ffprobe found
+  - video download works
+  - audio extraction works
+  - command ends with Done.
+
+
+STEP 16 - Clean test/build cache before Git commit
+--------------------------------------------------
+
+Do NOT delete dist\ytdown.exe if you still need to upload it to GitHub Release.
+
+Safe cleanup:
+
+  Remove-Item -Recurse -Force .tmp, .pyinstaller-cache, test-source-download, test-exe-download, test-exe-audio -ErrorAction SilentlyContinue
+  Remove-Item -Force ytdown.spec -ErrorAction SilentlyContinue
+
+
+STEP 17 - Do NOT commit generated files
+---------------------------------------
+
+Never commit these to Git:
+
+  build/
+  dist/
+  .tmp/
+  .pyinstaller-cache/
+  *.spec
+  test-audio/
+  test-downloads/
+  test-ejs*/
+  test-source-download/
+  test-exe-download/
+  test-exe-audio/
+
+They should be inside .gitignore.
+
+
+STEP 18 - Commit source changes only
+------------------------------------
+
+Check:
+
+  git status
+
+Add only real source/docs/config changes, for example:
+
+  git add ytu README.md CHANGELOG.md config.example.json .gitignore scripts
+  git commit -m "update yt-dlp compatibility and rebuild release"
+  git push
+
+If only dependency refresh happened and source code did not change, you may not need a commit.
+But you still need a new GitHub Release if you rebuilt ytdown.exe.
+
+
+STEP 19 - Create GitHub Release
+-------------------------------
+
+Go to:
+
+  GitHub repo -> Releases -> Draft a new release
+
+Use a new tag, for example:
+
+  v1.0.3
+
+Release title example:
+
+  YT Ultimate CLI v1.0.3 - Windows EXE Refresh
+
+Upload:
+
+  D:\ytultimate\dist\ytdown.exe
+
+Do not upload the whole dist folder. Upload only ytdown.exe.
+
+
+SUGGESTED RELEASE NOTES TEMPLATE
+================================
+
+## YT Ultimate CLI vX.X.X - Windows EXE Release
+
+This release refreshes the Windows executable and dependency stack.
+
+### Included
+
+- ytdown.exe Windows executable
+- Updated yt-dlp engine
+- FFmpeg compatibility check
+- Deno / EJS remote component support
+- Video download support
+- Audio extraction support
+- Playlist and queue support
+- Metadata and subtitle options
+
+### Recommended YouTube command
+
+```powershell
+.\ytdown.exe download "VIDEO_URL" --quality 1080p --fallback nearest --remote-components ejs:github
+```
+
+### Requirements
+
+Windows users should install or update:
+
+```powershell
+winget install Gyan.FFmpeg
+winget install DenoLand.Deno
+```
+
+or update:
+
+```powershell
+winget upgrade Gyan.FFmpeg
+winget upgrade DenoLand.Deno
+```
+
+### Notes
+
+This tool uses official yt-dlp and system FFmpeg.
+It is intended for authorized downloads only.
+It does not bypass DRM, paid access, private-video permissions, or platform access controls.
+
+
+LINUX UPDATE GUIDE
+==================
+
+Default Linux project path used during development:
+  ~/Reza_Linux_Tools/ytultimate
+
+Default Linux output directory:
+  ~/Videos/YTUltimate
+
+Default Linux config:
+  ~/.config/ytultimate/config.json
+
+Default Linux queue:
+  ~/.config/ytultimate/queue.jsonl
+
+
+STEP 1 - Go to project
+----------------------
+
+  cd ~/Reza_Linux_Tools/ytultimate
+
+
+STEP 2 - Pull latest code
+-------------------------
+
+  git status -sb
+  git pull
+
+
+STEP 3 - Activate venv
+----------------------
+
+If .venv already exists:
+
+  source .venv/bin/activate
+
+If .venv does not exist:
+
+  python3 -m venv .venv
+  source .venv/bin/activate
+
+
+STEP 4 - Update Linux dependencies
+----------------------------------
+
+  python -m pip install --upgrade pip setuptools wheel
+  python -m pip install -e .
+  python -m pip install -U yt-dlp rich typer platformdirs
+
+Optional testing tools:
+
+  python -m pip install -U pytest
+
+
+STEP 5 - Update FFmpeg on Linux
+-------------------------------
+
+Debian/Kali/Ubuntu:
+
+  sudo apt update
+  sudo apt install -y ffmpeg
+
+Or upgrade:
+
+  sudo apt update
+  sudo apt upgrade -y ffmpeg
+
+
+STEP 6 - Update Deno on Linux
+-----------------------------
+
+If available through apt:
+
+  sudo apt update
+  sudo apt install -y deno
+
+If apt does not provide Deno, install using the official Deno installation method from the Deno website.
+
+Check:
+
+  deno --version
+
+
+STEP 7 - Test Linux CLI
+-----------------------
+
+  ytdown --version
+  ytdown doctor
+  ytdown formats "https://www.youtube.com/shorts/dndq9l2pL7Q" --remote-components ejs:github
+  ytdown download "https://www.youtube.com/shorts/dndq9l2pL7Q" --quality 1080p --fallback nearest --remote-components ejs:github --output ~/Videos/YTUltimate-Test
+  ytdown audio "https://www.youtube.com/shorts/dndq9l2pL7Q" --audio-format mp3 --remote-components ejs:github --output ~/Videos/YTUltimate-Audio-Test
+
+
+STEP 8 - Run audit script
+-------------------------
+
+Basic audit:
+
+  bash scripts/audit_features.sh
+
+Live audit without real download:
+
+  YTDOWN_TEST_URL="https://www.youtube.com/shorts/dndq9l2pL7Q" bash scripts/audit_features.sh
+
+Full live audit:
+
+  YTDOWN_TEST_URL="https://www.youtube.com/shorts/dndq9l2pL7Q" \
+  YTDOWN_LIVE_DOWNLOAD=1 \
+  YTDOWN_TEST_AUDIO=1 \
+  YTDOWN_TEST_QUEUE_RUN=1 \
+  bash scripts/audit_features.sh
+
+View latest report:
+
+  LATEST_REPORT=$(ls -td audit-reports/* | head -1)
+  cat "$LATEST_REPORT/test-report.md"
+
+
+STEP 9 - Clean Linux test outputs
+---------------------------------
+
+Do not commit audit reports or downloaded test files.
+
+  rm -rf audit-reports/
+  rm -rf ~/Videos/YTUltimate-Test
+  rm -rf ~/Videos/YTUltimate-Audio-Test
+
+
+STEP 10 - Commit Linux/source changes if any
+--------------------------------------------
+
+  git status
+  git add .
+  git commit -m "update Linux compatibility"
+  git push
+
+Only commit real source/docs/config changes.
+Do not commit generated reports or media downloads.
+
+
+COMMON COMMANDS
+===============
+
+Check app version:
+
+  ytdown --version
+
+Check health:
+
+  ytdown doctor
+
+Show default paths:
+
+  ytdown paths
+
+Update yt-dlp engine in source/venv install:
+
+  ytdown update-engine
+
+Show formats:
+
+  ytdown formats "VIDEO_URL" --remote-components ejs:github
+
+Download video:
+
+  ytdown download "VIDEO_URL" --quality 1080p --fallback nearest --remote-components ejs:github
+
+Audio extraction:
+
+  ytdown audio "VIDEO_URL" --audio-format mp3 --remote-components ejs:github
+
+Custom output folder:
+
+  ytdown download "VIDEO_URL" --output D:\Downloads
+  ytdown download "VIDEO_URL" --output ~/Downloads
+
+
+WHEN OFFICIAL yt-dlp UPDATES
+============================
+
+Windows EXE:
+  1. Update yt-dlp in D-drive venv:
+       .\.venv\Scripts\python.exe -m pip install -U yt-dlp
+
+  2. Test source CLI:
+       ytdown doctor
+       ytdown formats "VIDEO_URL" --remote-components ejs:github
+
+  3. Rebuild ytdown.exe using PyInstaller.
+  4. Test ytdown.exe.
+  5. Upload new ytdown.exe to a new GitHub Release.
+
+Linux:
+  1. Activate venv:
+       source .venv/bin/activate
+
+  2. Update yt-dlp:
+       python -m pip install -U yt-dlp
+
+  3. Test:
+       ytdown doctor
+       ytdown formats "VIDEO_URL" --remote-components ejs:github
+
+  4. Run audit:
+       bash scripts/audit_features.sh
+
+
+WHEN OFFICIAL FFmpeg UPDATES
+============================
+
+Windows:
+  winget upgrade Gyan.FFmpeg
+
+Linux:
+  sudo apt update
+  sudo apt upgrade -y ffmpeg
+
+Then test:
+  ytdown doctor
+
+
+WHEN OFFICIAL Deno UPDATES
+==========================
+
+Windows:
+  winget upgrade DenoLand.Deno
+
+Linux:
+  Use apt or the official Deno install/update method.
+
+Then test:
+  deno --version
+  ytdown formats "VIDEO_URL" --remote-components ejs:github
+
+
+VERSIONING RULE
+===============
+
+If only ytdown.exe was rebuilt with a newer yt-dlp but your app code did not change:
+  Use patch version, for example:
+    v1.0.3
+
+If app features changed:
+  Use patch or minor version depending on change size:
+    v1.0.3
+    v1.1.0
+
+If breaking changes happen:
+  Use major version:
+    v2.0.0
+
+
+FINAL RELEASE CHECKLIST
+=======================
+
+Before publishing a new release, confirm:
+
+[ ] git status -sb is clean before starting
+[ ] git pull completed
+[ ] FFmpeg updated
+[ ] Deno updated
+[ ] yt-dlp updated
+[ ] source CLI works
+[ ] tests pass
+[ ] Windows EXE builds successfully
+[ ] Windows EXE --version works
+[ ] Windows EXE doctor works
+[ ] Windows EXE video download works
+[ ] Windows EXE audio extraction works
+[ ] no generated folders committed
+[ ] source changes committed and pushed
+[ ] new GitHub Release created
+[ ] ytdown.exe uploaded to release
+
+
+TROUBLESHOOTING
+===============
+
+Problem:
+  ModuleNotFoundError inside ytdown.exe
+
+Cause:
+  PyInstaller built using the wrong Python environment.
+
+Fix:
+  Always build with:
+    .\.venv\Scripts\python.exe -m PyInstaller ...
+
+And confirm log says:
+    Python environment: D:\ytultimate\.venv
+
+
+Problem:
+  ffmpeg missing / ffprobe missing
+
+Fix:
+  Windows:
+    winget install Gyan.FFmpeg
+
+  Linux:
+    sudo apt install ffmpeg
+
+Then reopen terminal and run:
+    ytdown doctor
+
+
+Problem:
+  YouTube EJS / signature / n challenge warning
+
+Fix:
+  Install Deno and use:
+    --remote-components ejs:github
+
+Example:
+    ytdown download "VIDEO_URL" --quality 1080p --fallback nearest --remote-components ejs:github
+
+
+Problem:
+  Git shows build/test files
+
+Fix:
+  Make sure .gitignore contains:
+    build/
+    dist/
+    .tmp/
+    .pyinstaller-cache/
+    *.spec
+    test-ejs*/
+    test-downloads/
+    test-audio/
+
+Then remove generated files:
+  git clean -fdX
+
+Careful:
+  git clean -fdX deletes ignored files. Do not use it if you still need dist/ytdown.exe before uploading.
+
+
+END OF GUIDE
+============
