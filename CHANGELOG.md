@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 - README polish
+
+- Reworked README into a cleaner GitHub-style guide.
+- Added a faster quick-start path, clearer quality behavior table, and easier command examples.
+- Improved sections for queue workflow, playlists, subtitles, audio, config, maintenance, and GitHub publishing.
+
 ## 1.0.1 - Command rename
 
 - Added `ytdown` as the recommended primary command.
